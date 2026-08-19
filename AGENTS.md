@@ -54,8 +54,9 @@
 - Documentation-only: run `pnpm exec prettier --check <changed-docs...>` and `git diff --check`.
 - Web-only: run the available `web` lint, typecheck, test, and build checks that cover the change.
 - API-only: run `pnpm --filter api lint`, `pnpm --filter api typecheck`, relevant tests, and `pnpm --filter api build`.
-- Shared packages or cross-workspace changes: run affected package checks followed by the relevant root `lint`, `typecheck`, `test`, and `build` tasks.
+- Shared packages or cross-workspace changes: run affected package checks followed by the relevant root `lint:check`, `typecheck`, `test`, and `build` tasks.
 - If a required check cannot run, state the exact command and reason in the handoff.
+- Every code change: finish with `pnpm lint:check`; it is the repository-wide zero-warning lint gate.
 
 ## Next.js local documentation
 
