@@ -6,11 +6,13 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "test": "turbo test",
+    "test:e2e": "turbo test:e2e",
     "lint": "turbo lint",
     "lint:check": "turbo lint -- --max-warnings=0",
     "format": "turbo format",
     "format:check": "prettier --check .",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "verify": "pnpm format:check && pnpm lint:check && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
