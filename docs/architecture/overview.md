@@ -121,17 +121,17 @@ The schema library and versioning policy will be recorded when the package is in
 
 ## Enforcement roadmap
 
-This first harness step establishes declarative guardrails. The next step will make the highest-value rules executable.
+Declarative guardrails are converted into executable controls incrementally.
 
-Known baseline gaps scheduled for that step are the Web TypeScript path mapping that resolves `@workspace/ui/*` directly to package source, the UI stylesheet's invalid outward Tailwind source path, warning-only shared lint behavior, the absence of a non-mutating root verification command, API e2e tests not being part of the root task graph, and the absence of CI. Tailwind content scanning must remain an application responsibility; fixing the path must not create a package-to-application dependency.
+Known baseline gaps scheduled for the remaining hardening steps are the Web TypeScript path mapping that resolves `@workspace/ui/*` directly to package source, the UI stylesheet's invalid outward Tailwind source path, warning-only shared lint behavior, the absence of a non-mutating root verification command, API e2e tests not being part of the root task graph, and the absence of CI. Tailwind content scanning must remain an application responsibility; fixing the path must not create a package-to-application dependency.
 
-| Concern                     | Declarative control now                   | Planned executable control                         |
-| --------------------------- | ----------------------------------------- | -------------------------------------------------- |
-| Workspace dependency flow   | Architecture plus layered `AGENTS.md`     | Turbo Boundaries and/or ESLint import restrictions |
-| Framework-local conventions | Workspace `AGENTS.md`                     | Workspace lint, typecheck, tests, and build        |
-| Formatting                  | Agent workflow                            | Non-mutating `format:check` task                   |
-| API behavior                | API instructions and existing Jest suites | Root-visible unit and e2e verification             |
-| Merge quality               | Local verification guidance               | One root `verify` command enforced by CI           |
+| Concern                     | Declarative control now                   | Executable control / status                                 |
+| --------------------------- | ----------------------------------------- | ----------------------------------------------------------- |
+| Workspace dependency flow   | Architecture plus layered `AGENTS.md`     | Planned: Turbo Boundaries and/or ESLint import restrictions |
+| Framework-local conventions | Workspace `AGENTS.md`                     | Planned: workspace lint, typecheck, tests, and build        |
+| Formatting                  | Agent workflow                            | Implemented: `pnpm format:check`                            |
+| API behavior                | API instructions and existing Jest suites | Planned: root-visible unit and e2e verification             |
+| Merge quality               | Local verification guidance               | Planned: one root `verify` command enforced by CI           |
 
 An architecture rule is not considered fully enforced merely because it is documented. Until its executable control is added, agents must report manual compliance explicitly.
 
