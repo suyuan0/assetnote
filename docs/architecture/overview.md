@@ -123,7 +123,7 @@ The schema library and versioning policy will be recorded when the package is in
 
 Declarative guardrails are converted into executable controls incrementally.
 
-The Web application and UI package self-references now resolve `@workspace/ui` through package exports. Known baseline gaps scheduled for the remaining hardening steps are the UI stylesheet's invalid outward Tailwind source paths, the Web shadcn configuration's direct CSS source path, and the absence of CI. Tailwind content scanning must remain an application responsibility; fixing the paths must not create a package-to-application dependency.
+The Web application and UI package self-references now resolve `@workspace/ui` through package exports. The UI stylesheet explicitly scans only UI-owned source; Tailwind's Web build context scans application source. `apps/web/components.json` deliberately points to the UI stylesheet as shadcn monorepo generator metadata, not as a runtime import or permission to consume other package internals. The remaining hardening gaps are executable workspace dependency rules and CI enforcement.
 
 | Concern                     | Declarative control now                   | Executable control / status                                                                                                |
 | --------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
