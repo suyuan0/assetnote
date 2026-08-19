@@ -25,6 +25,7 @@
 - `apps/api` owns product business invariants and persistent data access. `apps/web` owns presentation, interaction, and web-specific orchestration.
 - Keep product-specific code in its owning application. Create a shared package only for a stable boundary or demonstrated multi-workspace reuse.
 - Do not expose persistence entities, framework objects, or internal module types as public API contracts.
+- Every child workspace must live directly under `apps/` or `packages/` and define a local `turbo.json` with `"extends": ["//"]`. Application workspaces use exactly `"tags": ["layer-app"]`; package workspaces use exactly `"tags": ["layer-package"]`.
 
 ## Required workflow for agents
 
@@ -56,7 +57,7 @@
 - API-only: run `pnpm --filter api lint`, `pnpm --filter api typecheck`, relevant tests, and `pnpm --filter api build`.
 - Shared packages or cross-workspace changes: run affected package checks followed by the relevant root `lint:check`, `typecheck`, `test`, and `build` tasks.
 - If a required check cannot run, state the exact command and reason in the handoff.
-- Before handing off a code change, run `pnpm verify`; it is the canonical repository gate and includes formatting, zero-warning lint, typecheck, unit and e2e tests, and builds. Documentation-only changes may use the documentation-only check above.
+- Before handing off a code change, run `pnpm verify`. It is the canonical repository gate and runs non-mutating formatting checks, workspace layout/tag validation, Turbo dependency-boundary checks, zero-warning lint for configured lint tasks, typechecking, configured unit and end-to-end tests, and builds. Documentation-only changes may use the documentation-only checks above.
 
 ## Next.js local documentation
 

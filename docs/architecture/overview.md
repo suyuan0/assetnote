@@ -123,15 +123,17 @@ The schema library and versioning policy will be recorded when the package is in
 
 Declarative guardrails are converted into executable controls incrementally.
 
-The Web application and UI package self-references now resolve `@workspace/ui` through package exports. The UI stylesheet explicitly scans only UI-owned source; Tailwind's Web build context scans application source. `apps/web/components.json` deliberately points to the UI stylesheet as shadcn monorepo generator metadata, not as a runtime import or permission to consume other package internals. The remaining hardening gaps are executable workspace dependency rules and CI enforcement.
+The Web application and UI package self-references now resolve `@workspace/ui` through package exports. The UI stylesheet explicitly scans only UI-owned source; Tailwind's Web build context scans application source. `apps/web/components.json` deliberately points to the UI stylesheet as shadcn monorepo generator metadata, not as a runtime import or permission to consume other package internals.
 
-| Concern                     | Declarative control now                   | Executable control / status                                                                                                |
-| --------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Workspace dependency flow   | Architecture plus layered `AGENTS.md`     | Partially implemented: Web and UI self-references use package exports; Turbo Boundaries and/or ESLint restrictions planned |
-| Framework-local conventions | Workspace `AGENTS.md`                     | Implemented: `pnpm verify` runs all available lint, typecheck, tests, and builds                                           |
-| Formatting                  | Agent workflow                            | Implemented: `pnpm format:check`                                                                                           |
-| API behavior                | API instructions and existing Jest suites | Implemented: root unit and uncached e2e tests through `pnpm verify`                                                        |
-| Merge quality               | Local verification guidance               | Partially implemented: local `pnpm verify`; CI enforcement planned                                                         |
+Workspace dependency enforcement is now executable. `pnpm boundaries:check` first validates that every non-root pnpm workspace is directly under `apps/` or `packages/`, has a local `turbo.json` with `"extends": ["//"]`, and carries exactly the tag required by its layer. It then runs Turbo Boundaries: `layer-app` workspace dependencies may target only `layer-package`, while `layer-package` workspace dependencies may not target `layer-app`. `pnpm verify` includes this check. CI enforcement is intentionally deferred by the current project decision.
+
+| Concern                     | Declarative control now                   | Executable control / status                                                                                                                                                             |
+| --------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workspace dependency flow   | Architecture plus layered `AGENTS.md`     | Implemented: `pnpm boundaries:check` validates workspace layout/tags, allows `layer-app` dependencies only on `layer-package`, and prevents `layer-package` dependencies on `layer-app` |
+| Framework-local conventions | Workspace `AGENTS.md`                     | Implemented: `pnpm verify` runs all available lint, typecheck, tests, and builds                                                                                                        |
+| Formatting                  | Agent workflow                            | Implemented: `pnpm format:check`                                                                                                                                                        |
+| API behavior                | API instructions and existing Jest suites | Implemented: root unit and uncached e2e tests through `pnpm verify`                                                                                                                     |
+| Merge quality               | Local verification guidance               | Local gate implemented through `pnpm verify`; CI enforcement intentionally deferred                                                                                                     |
 
 An architecture rule is not considered fully enforced merely because it is documented. Until its executable control is added, agents must report manual compliance explicitly.
 

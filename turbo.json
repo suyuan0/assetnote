@@ -1,6 +1,20 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "boundaries": {
+    "tags": {
+      "layer-app": {
+        "dependencies": {
+          "allow": ["layer-package"]
+        }
+      },
+      "layer-package": {
+        "dependencies": {
+          "deny": ["layer-app"]
+        }
+      }
+    }
+  },
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
