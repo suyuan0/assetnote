@@ -123,15 +123,15 @@ The schema library and versioning policy will be recorded when the package is in
 
 Declarative guardrails are converted into executable controls incrementally.
 
-Known baseline gaps scheduled for the remaining hardening steps are the Web TypeScript path mapping that resolves `@workspace/ui/*` directly to package source, the UI stylesheet's invalid outward Tailwind source path, and the absence of CI. Tailwind content scanning must remain an application responsibility; fixing the path must not create a package-to-application dependency.
+The Web application now resolves `@workspace/ui` through package exports. Known baseline gaps scheduled for the remaining hardening steps are the UI package's self-referential TypeScript source mapping, the UI stylesheet's invalid outward Tailwind source paths, the Web shadcn configuration's direct CSS source path, and the absence of CI. Tailwind content scanning must remain an application responsibility; fixing the paths must not create a package-to-application dependency.
 
-| Concern                     | Declarative control now                   | Executable control / status                                                      |
-| --------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------- |
-| Workspace dependency flow   | Architecture plus layered `AGENTS.md`     | Planned: Turbo Boundaries and/or ESLint import restrictions                      |
-| Framework-local conventions | Workspace `AGENTS.md`                     | Implemented: `pnpm verify` runs all available lint, typecheck, tests, and builds |
-| Formatting                  | Agent workflow                            | Implemented: `pnpm format:check`                                                 |
-| API behavior                | API instructions and existing Jest suites | Implemented: root unit and uncached e2e tests through `pnpm verify`              |
-| Merge quality               | Local verification guidance               | Partially implemented: local `pnpm verify`; CI enforcement planned               |
+| Concern                     | Declarative control now                   | Executable control / status                                                                                         |
+| --------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Workspace dependency flow   | Architecture plus layered `AGENTS.md`     | Partially implemented: Web consumes UI through package exports; Turbo Boundaries and/or ESLint restrictions planned |
+| Framework-local conventions | Workspace `AGENTS.md`                     | Implemented: `pnpm verify` runs all available lint, typecheck, tests, and builds                                    |
+| Formatting                  | Agent workflow                            | Implemented: `pnpm format:check`                                                                                    |
+| API behavior                | API instructions and existing Jest suites | Implemented: root unit and uncached e2e tests through `pnpm verify`                                                 |
+| Merge quality               | Local verification guidance               | Partially implemented: local `pnpm verify`; CI enforcement planned                                                  |
 
 An architecture rule is not considered fully enforced merely because it is documented. Until its executable control is added, agents must report manual compliance explicitly.
 
