@@ -13,6 +13,7 @@ AssetNote needs a persistent relational database owned by the NestJS API. The pe
 - The project uses Prisma ORM 7 with Prisma Client.
 - The Prisma schema is authored in PSL and is the source of truth for the database model.
 - Prisma CLI and Prisma Client use the same Prisma 7 release.
+- The NestJS API remains on its current CommonJS runtime. Its `prisma-client` generator uses `moduleFormat = "cjs"` and `importFileExtension = ""`; changing the API to ESM is a separate module-system decision.
 - PostgreSQL connections use the official Prisma PostgreSQL driver adapter.
 - Prisma configuration, schema, migrations, generated client, database lifecycle code, and persistence adapters belong only to `apps/api`.
 - No `packages/database` workspace will be introduced.
@@ -29,7 +30,7 @@ AssetNote needs a persistent relational database owned by the NestJS API. The pe
 
 ## Consequences
 
-The API must use an ESM-compatible Prisma 7 integration and a Node.js version supported by Prisma 7.
+The API must run on a Node.js version supported by the pinned Prisma 7 release. The generated Client must remain compatible with the API's selected module system; Prisma 7 does not itself require migrating the NestJS application to ESM.
 
 Database changes require migration review and explicit application. Prisma upgrades are deliberate dependency changes followed by full repository verification.
 

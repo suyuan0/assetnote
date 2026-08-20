@@ -12,8 +12,9 @@
     "format": "turbo format",
     "format:check": "prettier --check .",
     "typecheck": "turbo typecheck",
-    "verify": "pnpm format:check && pnpm boundaries:check && pnpm lint:check && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build",
-    "boundaries:check": "node scripts/check-workspace-tags.mjs && turbo boundaries"
+    "verify": "pnpm format:check && pnpm boundaries:check && pnpm prisma:verify && pnpm lint:check && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build",
+    "boundaries:check": "node scripts/check-workspace-tags.mjs && turbo boundaries",
+    "prisma:verify": "turbo prisma:generate"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",

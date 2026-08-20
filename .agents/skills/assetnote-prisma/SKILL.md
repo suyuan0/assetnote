@@ -15,6 +15,21 @@ Use this Skill for Prisma and PostgreSQL work in AssetNote. Before acting, read 
 - Prisma runtime types stay inside infrastructure. They must not become domain entities, HTTP DTOs, or shared contracts.
 - Application providers coordinate use cases and transaction boundaries through explicit ports. Feature repositories implement those ports in their infrastructure layer.
 
+## Generator baseline
+
+The API currently uses a CommonJS runtime. Keep the Prisma Client generator compatible with that baseline:
+
+```prisma
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "cjs"
+  importFileExtension = ""
+}
+```
+
+Do not migrate the API to ESM, add `.js` suffixes to its TypeScript imports, or change these generator values merely to integrate or upgrade Prisma. An intentional API module-system change must update ADR 0001 and all affected build and test configuration in the same change.
+
 ## Version and source discipline
 
 - Use the Prisma version installed in the API workspace and keep Prisma CLI and Client on the same release.
