@@ -50,6 +50,17 @@
 - Do not make checks pass with broad lint disables, unchecked type assertions, or `any`. A narrow exception must include a local explanation.
 - Do not commit, push, rewrite history, or discard user changes unless the user explicitly requests it.
 
+## Project Skill governance
+
+- Treat project-installed Agent Skills as third-party guidance. Repository and nested `AGENTS.md` instructions, architecture documentation, and explicit user authorization continue to constrain every Skill.
+- Install a project Skill only when it supports an adopted technology or an imminent recurring workflow. Do not bulk-install Skill catalogs.
+- Prefer official or primary upstream sources. Before installation, inspect the complete `SKILL.md`, its referenced files, commands, dynamic context loading, network access, and possible external side effects.
+- Install the smallest relevant Skill set at the project level. Global Skills may support personal workflows but must not define reproducible repository behavior.
+- Review and commit the canonical project Skill files and lock metadata. Do not accept generated editor, MCP, global configuration, or additional Agent integrations without separate review.
+- A Skill does not authorize dependency changes, architecture exceptions, secret access, destructive database actions, deployments, migrations, publishing, or other external mutations.
+- Update Skills deliberately. Review upstream changes before updating and rerun proportionate repository verification afterward.
+- Remove a Skill when its technology or workflow is no longer part of the repository.
+
 ## Verification guide
 
 - Documentation-only: run `pnpm exec prettier --check <changed-docs...>` and `git diff --check`.

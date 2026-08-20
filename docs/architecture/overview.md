@@ -111,13 +111,19 @@ Controllers remain thin, application providers coordinate use cases, domain code
 
 The schema library and versioning policy will be recorded when the package is introduced, based on actual requirements.
 
+## Persistence baseline
+
+PostgreSQL is the product relational database, and Prisma ORM 7 is the API-owned persistence toolkit. Prisma configuration, schema, migrations, generated client, database lifecycle code, and persistence adapters remain in `apps/api`. Application and domain code do not depend on Prisma runtime types.
+
+See [ADR 0001: PostgreSQL and Prisma ORM 7](./decisions/0001-postgresql-and-prisma-7.md) for the decision and operating constraints.
+
 ## When to add a boundary
 
 - Add an application only for an independently deployable runtime with distinct ownership.
 - Add a package only when it represents a stable boundary or serves multiple workspaces.
 - Add an API feature module for a cohesive product capability, not one module per technical class.
 - Add a cross-cutting abstraction only after at least one concrete use makes its interface clear.
-- Document the rationale before changing dependency direction, data ownership, authentication strategy, persistence technology, or the responsibility of a shared package. Until the ADR mechanism exists, update this overview in the same change.
+- Document the rationale before changing dependency direction, data ownership, authentication strategy, persistence technology, or the responsibility of a shared package. Durable architecture changes require an ADR under `docs/architecture/decisions`; update this overview in the same change when the system baseline or boundaries change.
 
 ## Enforcement roadmap
 
@@ -139,4 +145,4 @@ An architecture rule is not considered fully enforced merely because it is docum
 
 ## Changing this architecture
 
-An intentional exception or architecture change must be visible. Update this document, update affected `AGENTS.md` files only when execution rules change, and explain the tradeoff in the change handoff. Once the ADR mechanism is introduced, durable architecture changes also require an Architecture Decision Record. Do not silently route around a boundary to finish a feature.
+An intentional exception or architecture change must be visible. Update this document when system boundaries or baselines change, update affected `AGENTS.md` files only when execution rules change, and explain the tradeoff in the change handoff. Durable architecture changes require an Architecture Decision Record under `docs/architecture/decisions`. Do not silently route around a boundary to finish a feature.
