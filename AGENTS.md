@@ -47,6 +47,9 @@
 - Do not deploy, publish packages, run production migrations, mutate external services, rotate credentials, or send messages unless the user explicitly authorizes that external side effect.
 - Do not edit generated output such as `.next`, `dist`, coverage output, or Turbo cache artifacts.
 - Add or update tests for behavior changes. HTTP contract changes require end-to-end coverage plus focused unit tests for affected business behavior where applicable.
+- In new or modified TypeScript and JavaScript, prefer function declarations for named module-level functions, exported functions, React components, and process or bootstrap entrypoints. Use arrow functions for callbacks and inline factories.
+- Use method syntax for class behavior. Use arrow-function class fields only when lexical `this` binding is required.
+- Do not rewrite otherwise untouched code solely to change between function declarations and arrow functions.
 - Do not make checks pass with broad lint disables, unchecked type assertions, or `any`. A narrow exception must include a local explanation.
 - Do not commit, push, rewrite history, or discard user changes unless the user explicitly requests it.
 
