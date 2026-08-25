@@ -15,8 +15,8 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return the Chinese service status', () => {
+      expect(appController.getHello()).toBe('AssetNote API 服务运行正常。');
     });
   });
 });

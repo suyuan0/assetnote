@@ -12,7 +12,7 @@ export const parseDatabaseConfig = (
   const value = databaseUrl?.trim();
 
   if (!value) {
-    throw new Error('DATABASE_URL is required.');
+    throw new Error('必须配置 DATABASE_URL。');
   }
 
   let parsedUrl: URL;
@@ -20,21 +20,21 @@ export const parseDatabaseConfig = (
   try {
     parsedUrl = new URL(value);
   } catch {
-    throw new Error('DATABASE_URL must be a valid URL.');
+    throw new Error('DATABASE_URL 必须是有效的 URL。');
   }
 
   if (!POSTGRES_PROTOCOLS.has(parsedUrl.protocol)) {
     throw new Error(
-      'DATABASE_URL must use the postgresql:// or postgres:// protocol.',
+      'DATABASE_URL 必须使用 postgresql:// 或 postgres:// 协议。',
     );
   }
 
   if (!parsedUrl.hostname) {
-    throw new Error('DATABASE_URL must include a host.');
+    throw new Error('DATABASE_URL 必须包含主机地址。');
   }
 
   if (parsedUrl.pathname.length <= 1) {
-    throw new Error('DATABASE_URL must include a database name.');
+    throw new Error('DATABASE_URL 必须包含数据库名称。');
   }
 
   return { url: value };

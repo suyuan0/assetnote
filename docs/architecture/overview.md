@@ -1,7 +1,7 @@
 # AssetNote Architecture
 
 - Status: baseline v1
-- Last updated: 2026-08-19
+- Last updated: 2026-08-20
 
 ## Purpose
 
@@ -98,6 +98,21 @@ domain -> no NestJS, HTTP, ORM, or infrastructure dependency
 ```
 
 Controllers remain thin, application providers coordinate use cases, domain code expresses business rules, and infrastructure implements outward-facing details. Feature-to-feature calls use an exported provider or explicit facade rather than deep imports.
+
+## Authentication baseline
+
+AssetNote currently authenticates its browser-only Web client with email and password. The API owns identity, password verification, platform authorization, and server-side sessions; the Web application only carries the session credential and presents the authenticated experience.
+
+- Public registration is disabled. A controlled bootstrap operation creates the first super administrator, and invitation-based account creation will be added separately.
+- Platform roles are `SUPER_ADMIN`, `ADMIN`, and `USER`. Invitation and administrative capabilities use explicit policy; future portfolio ownership or collaboration permissions remain resource-level concerns rather than additional platform roles.
+- Passwords are stored only as Argon2id hashes behind an application-owned port.
+- Authentication uses opaque, database-backed sessions with a fixed 24-hour lifetime. The browser receives the raw random token only through a protected cookie, while PostgreSQL stores only its hash.
+- Authenticated requests resolve the current session and active user so logout, account disabling, and role changes take effect immediately.
+- Prisma records, password hashes, and session credentials remain API infrastructure details and never become transport contracts.
+
+The first account is created through the controlled [initial super administrator bootstrap operation](../operations/bootstrap-super-admin.md).
+
+See [ADR 0002: Email/password authentication and server-side sessions](./decisions/0002-email-password-authentication-and-server-sessions.md) for the security, role, and session decisions.
 
 ## Shared contracts
 

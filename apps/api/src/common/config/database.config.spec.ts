@@ -12,33 +12,33 @@ describe('parseDatabaseConfig', () => {
     {
       caseName: 'an undefined value',
       value: undefined,
-      expectedMessage: 'DATABASE_URL is required.',
+      expectedMessage: '必须配置 DATABASE_URL。',
     },
     {
       caseName: 'a blank value',
       value: '   ',
-      expectedMessage: 'DATABASE_URL is required.',
+      expectedMessage: '必须配置 DATABASE_URL。',
     },
     {
       caseName: 'a malformed URL',
       value: 'not-a-url-secret-token',
-      expectedMessage: 'DATABASE_URL must be a valid URL.',
+      expectedMessage: 'DATABASE_URL 必须是有效的 URL。',
     },
     {
       caseName: 'a non-PostgreSQL protocol',
       value: 'mysql://assetnote:secret-token@localhost:3306/assetnote',
       expectedMessage:
-        'DATABASE_URL must use the postgresql:// or postgres:// protocol.',
+        'DATABASE_URL 必须使用 postgresql:// 或 postgres:// 协议。',
     },
     {
       caseName: 'a missing host',
       value: 'postgresql:///assetnote-secret-token',
-      expectedMessage: 'DATABASE_URL must include a host.',
+      expectedMessage: 'DATABASE_URL 必须包含主机地址。',
     },
     {
       caseName: 'a missing database name',
       value: 'postgresql://assetnote:secret-token@localhost:5432/',
-      expectedMessage: 'DATABASE_URL must include a database name.',
+      expectedMessage: 'DATABASE_URL 必须包含数据库名称。',
     },
   ])(
     'rejects $caseName without revealing the supplied value',
