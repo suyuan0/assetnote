@@ -17,11 +17,15 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 
 import applicationConfig from '../../../common/config/application.config';
+import type { UserRole } from '../../users';
 import { InvalidCredentialsError } from '../application/invalid-credentials.error';
 import { type LoginResult, LoginService } from '../application/login.service';
 import { LogoutService } from '../application/logout.service';
 import type { AuthenticatedRequest } from './authenticated-request';
-import type { AuthSessionResponseDto } from './auth-session-response.dto';
+import type {
+  AuthSessionResponseDto,
+  AuthSessionResponseRole,
+} from './auth-session-response.dto';
 import { LoginRequestDto } from './login.dto';
 import { SessionAuthenticationGuard } from './session-authentication.guard';
 import {
@@ -34,9 +38,20 @@ interface AuthSessionResponseInput {
   readonly user: {
     readonly id: string;
     readonly email: string;
-    readonly role: AuthSessionResponseDto['user']['role'];
+    readonly role: UserRole;
   };
   readonly expiresAt: Date;
+}
+
+function mapAuthSessionResponseRole(role: UserRole): AuthSessionResponseRole {
+  switch (role) {
+    case 'SUPER_ADMIN':
+      return 'SUPER_ADMIN';
+    case 'ADMIN':
+      return 'ADMIN';
+    case 'USER':
+      return 'USER';
+  }
 }
 
 function mapAuthSessionResponse(
@@ -46,7 +61,7 @@ function mapAuthSessionResponse(
     user: {
       id: result.user.id,
       email: result.user.email,
-      role: result.user.role,
+      role: mapAuthSessionResponseRole(result.user.role),
     },
     expiresAt: result.expiresAt.toISOString(),
   };
@@ -91,7 +106,7 @@ export class AuthController {
       expires: result.expiresAt,
     });
 
-    this.logger.log(`用户 ${result.user.id} 登录成功。`);
+    this.logger.log('用户登录成功。');
 
     return mapAuthSessionResponse(result);
   }

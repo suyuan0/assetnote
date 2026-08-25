@@ -11,9 +11,12 @@ export class PrismaService extends PrismaClient implements OnModuleDestroy {
     @Inject(databaseConfig.KEY)
     config: ConfigType<typeof databaseConfig>,
   ) {
-    const adapter = new PrismaPg({
-      connectionString: config.url,
-    });
+    const adapter = new PrismaPg(
+      {
+        connectionString: config.url,
+      },
+      config.schema ? { schema: config.schema } : undefined,
+    );
 
     super({ adapter });
   }

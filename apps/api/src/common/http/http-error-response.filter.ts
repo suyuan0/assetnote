@@ -102,11 +102,7 @@ export class HttpErrorResponseFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost): void {
     if (!(exception instanceof HttpException)) {
-      if (exception instanceof Error) {
-        this.logger.error('处理 HTTP 请求时发生未预期错误。', exception.stack);
-      } else {
-        this.logger.error('处理 HTTP 请求时发生未预期错误。');
-      }
+      this.logger.error('处理 HTTP 请求时发生未预期错误。');
     }
 
     const response = host.switchToHttp().getResponse<Response>();

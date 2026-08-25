@@ -1,10 +1,16 @@
 import { parseDatabaseConfig } from './database.config';
 
 describe('parseDatabaseConfig', () => {
-  it.each([
-    'postgresql://assetnote:local-password@127.0.0.1:5432/assetnote?schema=public',
-    'postgres://assetnote:local-password@localhost:5432/assetnote',
-  ])('accepts a PostgreSQL URL using %s', (url) => {
+  it('accepts a PostgreSQL URL and reads its schema', () => {
+    const url =
+      'postgresql://assetnote:local-password@127.0.0.1:5432/assetnote?schema=public';
+
+    expect(parseDatabaseConfig(url)).toEqual({ url, schema: 'public' });
+  });
+
+  it('accepts a PostgreSQL URL without a schema', () => {
+    const url = 'postgres://assetnote:local-password@localhost:5432/assetnote';
+
     expect(parseDatabaseConfig(url)).toEqual({ url });
   });
 

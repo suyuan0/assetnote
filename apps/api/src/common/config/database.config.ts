@@ -2,13 +2,14 @@ import { registerAs } from '@nestjs/config';
 
 export interface DatabaseConfig {
   readonly url: string;
+  readonly schema?: string;
 }
 
 const POSTGRES_PROTOCOLS = new Set(['postgres:', 'postgresql:']);
 
-export const parseDatabaseConfig = (
+export function parseDatabaseConfig(
   databaseUrl: string | undefined,
-): DatabaseConfig => {
+): DatabaseConfig {
   const value = databaseUrl?.trim();
 
   if (!value) {
@@ -37,8 +38,10 @@ export const parseDatabaseConfig = (
     throw new Error('DATABASE_URL 必须包含数据库名称。');
   }
 
-  return { url: value };
-};
+  const schema = parsedUrl.searchParams.get('schema')?.trim();
+
+  return schema ? { url: value, schema } : { url: value };
+}
 
 export const databaseConfig = registerAs('database', () =>
   parseDatabaseConfig(process.env['DATABASE_URL']),
