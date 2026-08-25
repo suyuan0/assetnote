@@ -62,12 +62,17 @@ export class LoginService {
     const expiresAt = new Date(authenticatedAt.getTime() + SESSION_DURATION_MS);
     const sessionToken = this.sessionTokenService.generate();
 
-    await this.authSessionRepository.createForSuccessfulLogin({
-      userId: user.id,
-      tokenHash: sessionToken.tokenHash,
-      expiresAt,
-      authenticatedAt,
-    });
+    const sessionCreated =
+      await this.authSessionRepository.createForSuccessfulLogin({
+        userId: user.id,
+        tokenHash: sessionToken.tokenHash,
+        expiresAt,
+        authenticatedAt,
+      });
+
+    if (!sessionCreated) {
+      throw new InvalidCredentialsError();
+    }
 
     return {
       user: {

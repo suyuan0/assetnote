@@ -8,13 +8,64 @@ import type {
 } from '../application/initial-super-admin.repository';
 import type { User } from '../domain/user';
 
-const MAX_SERIALIZABLE_TRANSACTION_ATTEMPTS = 3;
+const MAX_INITIAL_SUPER_ADMIN_ATTEMPTS = 3;
+const USERS_EMAIL_UNIQUE_CONSTRAINT = 'users_email_key';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isEmailFieldList(value: unknown): boolean {
+  return Array.isArray(value) && value.length === 1 && value[0] === 'email';
+}
+
+function isUsersEmailConstraint(value: unknown): boolean {
+  if (value === USERS_EMAIL_UNIQUE_CONSTRAINT || isEmailFieldList(value)) {
+    return true;
+  }
+
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    value['index'] === USERS_EMAIL_UNIQUE_CONSTRAINT ||
+    isEmailFieldList(value['fields'])
+  );
+}
 
 function isSerializableTransactionConflict(error: unknown): boolean {
   return (
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === 'P2034'
   );
+}
+
+export function isUsersEmailUniqueConstraintConflict(error: unknown): boolean {
+  if (
+    !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+    error.code !== 'P2002' ||
+    !isRecord(error.meta)
+  ) {
+    return false;
+  }
+
+  if (
+    isUsersEmailConstraint(error.meta['target']) ||
+    isUsersEmailConstraint(error.meta['constraint'])
+  ) {
+    return true;
+  }
+
+  const driverAdapterError = error.meta['driverAdapterError'];
+
+  if (!isRecord(driverAdapterError)) {
+    return false;
+  }
+
+  const cause = driverAdapterError['cause'];
+
+  return isRecord(cause) && isUsersEmailConstraint(cause['constraint']);
 }
 
 @Injectable()
@@ -34,15 +85,42 @@ export class PrismaInitialSuperAdminRepository implements InitialSuperAdminRepos
     try {
       return await this.createWithinSerializableTransaction(input);
     } catch (error) {
-      if (
-        !isSerializableTransactionConflict(error) ||
-        attempt >= MAX_SERIALIZABLE_TRANSACTION_ATTEMPTS
-      ) {
-        throw error;
+      if (isSerializableTransactionConflict(error)) {
+        if (attempt >= MAX_INITIAL_SUPER_ADMIN_ATTEMPTS) {
+          throw error;
+        }
+
+        return this.createWithSerializableRetry(input, attempt + 1);
       }
 
-      return this.createWithSerializableRetry(input, attempt + 1);
+      if (isUsersEmailUniqueConstraintConflict(error)) {
+        return this.resolveUsersEmailUniqueConflict(input, attempt, error);
+      }
+
+      throw error;
     }
+  }
+
+  private async resolveUsersEmailUniqueConflict(
+    input: CreateInitialSuperAdminInput,
+    attempt: number,
+    originalError: unknown,
+  ): Promise<User | null> {
+    const existingUser = await this.prisma.user.findFirst({
+      select: {
+        id: true,
+      },
+    });
+
+    if (existingUser) {
+      return null;
+    }
+
+    if (attempt >= MAX_INITIAL_SUPER_ADMIN_ATTEMPTS) {
+      throw originalError;
+    }
+
+    return this.createWithSerializableRetry(input, attempt + 1);
   }
 
   private createWithinSerializableTransaction(

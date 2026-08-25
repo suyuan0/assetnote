@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../../common/database/prisma.service';
-import type { UserRepository } from '../application/user.repository';
-import type { AuthenticatableUser } from '../domain/user';
+import type {
+  UserAuthenticationRecord,
+  UserRepository,
+} from '../application/user.repository';
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
@@ -10,7 +12,7 @@ export class PrismaUserRepository implements UserRepository {
 
   async findForAuthenticationByEmail(
     normalizedEmail: string,
-  ): Promise<AuthenticatableUser | null> {
+  ): Promise<UserAuthenticationRecord | null> {
     const user = await this.prisma.user.findUnique({
       where: {
         email: normalizedEmail,

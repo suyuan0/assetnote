@@ -51,6 +51,11 @@ The authentication design must support immediate session revocation and role or 
 - Prisma `User` and `AuthSession` records remain infrastructure details. Password hashes and Prisma-generated types never appear in HTTP responses, domain entities, or shared contracts.
 - `packages/contracts` remains deferred until the Web application consumes the authentication API and a real shared transport boundary exists.
 
+### Production readiness gates
+
+- The current login throttle uses Nest's process-local in-memory storage and derives its key from `req.ip`. This is suitable only for local development and a single trusted process. Before deployment behind a reverse proxy or with multiple API replicas, configure the exact trusted-proxy chain, use shared throttle storage, and enforce both network-source and normalized-account dimensions so clients neither share one accidental limit nor bypass a global limit across replicas.
+- The initial bootstrap input currently accepts passwords containing 8 to 128 characters. This preserves the current local provisioning workflow but is not the final production password-policy decision. Before production without multi-factor authentication, either raise the minimum to the current OWASP-recommended 15 characters or explicitly accept and document the risk with compensating controls. Enabling MFA requires its own accepted design and does not happen implicitly.
+
 ## Consequences
 
 Every authenticated request performs an indexed session lookup and resolves the current user. This is acceptable for the current product scale and provides simple, immediate revocation semantics. A distributed session cache may be introduced later without changing the browser credential model if scale requires it.

@@ -18,7 +18,7 @@ export interface ActiveAuthSession {
 export interface AuthSessionRepository {
   createForSuccessfulLogin(
     input: CreateSessionForSuccessfulLoginInput,
-  ): Promise<void>;
+  ): Promise<boolean>;
 
   findActiveByTokenHash(
     tokenHash: string,

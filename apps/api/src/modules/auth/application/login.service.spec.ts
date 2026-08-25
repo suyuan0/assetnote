@@ -103,7 +103,7 @@ describe('LoginService', () => {
       tokenHash: TOKEN_HASH,
     });
     hashPassword.mockResolvedValue('discarded-password-hash');
-    createSession.mockResolvedValue();
+    createSession.mockResolvedValue(true);
 
     loginService = new LoginService(
       userRepository,
@@ -201,5 +201,26 @@ describe('LoginService', () => {
     expect(verifyPassword).toHaveBeenCalled();
     expect(generateSessionToken).not.toHaveBeenCalled();
     expect(createSession).not.toHaveBeenCalled();
+  });
+
+  it('rejects the login when the user becomes disabled before session creation', async () => {
+    findUser.mockResolvedValue(ACTIVE_USER);
+    verifyPassword.mockResolvedValue(true);
+    createSession.mockResolvedValue(false);
+
+    await expect(
+      loginService.execute({
+        email: ACTIVE_USER.email,
+        password: 'correct password',
+      }),
+    ).rejects.toBeInstanceOf(InvalidCredentialsError);
+
+    expect(generateSessionToken).toHaveBeenCalledTimes(1);
+    expect(createSession).toHaveBeenCalledWith({
+      userId: ACTIVE_USER.id,
+      tokenHash: TOKEN_HASH,
+      authenticatedAt: AUTHENTICATED_AT,
+      expiresAt: EXPIRES_AT,
+    });
   });
 });

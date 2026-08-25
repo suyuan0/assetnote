@@ -1,7 +1,7 @@
 # AssetNote Architecture
 
 - Status: baseline v1
-- Last updated: 2026-08-20
+- Last updated: 2026-08-25
 
 ## Purpose
 
@@ -101,14 +101,14 @@ Controllers remain thin, application providers coordinate use cases, domain code
 
 ## Authentication baseline
 
-AssetNote currently authenticates its browser-only Web client with email and password. The API owns identity, password verification, platform authorization, and server-side sessions; the Web application only carries the session credential and presents the authenticated experience.
+The API now implements browser-oriented email/password authentication, but the Web application has not integrated that HTTP surface yet. The API owns identity, password verification, platform authorization, and server-side sessions; after Web integration, the Web application will only carry the session credential and present the authenticated experience.
 
 - Public registration is disabled. A controlled bootstrap operation creates the first super administrator, and invitation-based account creation will be added separately.
 - Platform roles are `SUPER_ADMIN`, `ADMIN`, and `USER`. Invitation and administrative capabilities use explicit policy; future portfolio ownership or collaboration permissions remain resource-level concerns rather than additional platform roles.
 - Passwords are stored only as Argon2id hashes behind an application-owned port.
 - Authentication uses opaque, database-backed sessions with a fixed 24-hour lifetime. The browser receives the raw random token only through a protected cookie, while PostgreSQL stores only its hash.
 - Authenticated requests resolve the current session and active user so logout, account disabling, and role changes take effect immediately.
-- Prisma records, password hashes, and session credentials remain API infrastructure details and never become transport contracts.
+- Prisma records remain infrastructure details. Password hashes and session credentials remain API-internal authentication details; none of them become domain entities or transport contracts.
 
 The first account is created through the controlled [initial super administrator bootstrap operation](../operations/bootstrap-super-admin.md).
 
@@ -131,6 +131,8 @@ The schema library and versioning policy will be recorded when the package is in
 PostgreSQL is the product relational database, and Prisma ORM 7 is the API-owned persistence toolkit. Prisma configuration, schema, migrations, generated client, database lifecycle code, and persistence adapters remain in `apps/api`. Application and domain code do not depend on Prisma runtime types.
 
 See [ADR 0001: PostgreSQL and Prisma ORM 7](./decisions/0001-postgresql-and-prisma-7.md) for the decision and operating constraints.
+
+PostgreSQL-backed repository tests require the separately provisioned connection described in [Dedicated PostgreSQL test database](../operations/test-database.md). They never fall back to the development connection.
 
 ## When to add a boundary
 

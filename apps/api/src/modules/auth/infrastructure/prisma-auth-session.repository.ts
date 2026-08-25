@@ -13,23 +13,34 @@ export class PrismaAuthSessionRepository implements AuthSessionRepository {
 
   async createForSuccessfulLogin(
     input: CreateSessionForSuccessfulLoginInput,
-  ): Promise<void> {
-    await this.prisma.user.update({
-      where: {
-        id: input.userId,
-      },
-      data: {
-        lastLoginAt: input.authenticatedAt,
-        sessions: {
-          create: {
-            tokenHash: input.tokenHash,
-            expiresAt: input.expiresAt,
-          },
+  ): Promise<boolean> {
+    return this.prisma.$transaction(async (transaction) => {
+      const updatedUsers = await transaction.user.updateMany({
+        where: {
+          id: input.userId,
+          status: 'ACTIVE',
         },
-      },
-      select: {
-        id: true,
-      },
+        data: {
+          lastLoginAt: input.authenticatedAt,
+        },
+      });
+
+      if (updatedUsers.count !== 1) {
+        return false;
+      }
+
+      await transaction.authSession.create({
+        data: {
+          userId: input.userId,
+          tokenHash: input.tokenHash,
+          expiresAt: input.expiresAt,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      return true;
     });
   }
 

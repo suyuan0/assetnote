@@ -12,7 +12,3 @@ export interface User {
   readonly role: UserRole;
   readonly status: UserStatus;
 }
-
-export interface AuthenticatableUser extends User {
-  readonly passwordHash: string;
-}

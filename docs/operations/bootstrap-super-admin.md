@@ -30,6 +30,10 @@ Password input is hidden. Passwords must contain 8 to 128 characters and are
 never accepted through command-line arguments, printed, or written to a
 configuration file.
 
+The 8-character minimum is the current local bootstrap rule, not an accepted
+production password policy. Before production, complete the password-policy and
+multi-factor-authentication decision recorded in ADR 0002.
+
 The email address is trimmed and lowercased before storage. Password text is
 not trimmed or otherwise rewritten before Argon2id hashing.
 

@@ -8,6 +8,27 @@ import {
 
 jest.setTimeout(30_000);
 
+interface Deferred {
+  readonly promise: Promise<void>;
+  resolve(): void;
+}
+
+function createDeferred(): Deferred {
+  let resolvePromise = (): void => {
+    throw new Error('异步测试信号尚未初始化。');
+  };
+  const promise = new Promise<void>((resolve) => {
+    resolvePromise = () => resolve();
+  });
+
+  return {
+    promise,
+    resolve(): void {
+      resolvePromise();
+    },
+  };
+}
+
 describe('Prisma repositories (PostgreSQL integration)', () => {
   let testSchema: PostgreSqlTestSchema | undefined;
 
@@ -67,6 +88,37 @@ describe('Prisma repositories (PostgreSQL integration)', () => {
     await expect(prisma.user.count()).resolves.toBe(1);
   });
 
+  it('handles concurrent initial super administrators using the same email', async () => {
+    const { prisma } = getTestSchema();
+    const repository = new PrismaInitialSuperAdminRepository(prisma);
+    const input = {
+      normalizedEmail: 'same-super-admin@example.com',
+      passwordHash: 'same-password-hash',
+    } as const;
+    const results = await Promise.all([
+      repository.createIfNoUsersExist(input),
+      repository.createIfNoUsersExist(input),
+    ]);
+
+    expect(results.filter((user) => user !== null)).toHaveLength(1);
+    expect(results.filter((user) => user === null)).toHaveLength(1);
+    await expect(
+      prisma.user.findMany({
+        select: {
+          email: true,
+          role: true,
+          status: true,
+        },
+      }),
+    ).resolves.toEqual([
+      {
+        email: input.normalizedEmail,
+        role: 'SUPER_ADMIN',
+        status: 'ACTIVE',
+      },
+    ]);
+  });
+
   it('loads the authentication fields for a user by normalized email', async () => {
     const { prisma } = getTestSchema();
     const repository = new PrismaUserRepository(prisma);
@@ -109,12 +161,14 @@ describe('Prisma repositories (PostgreSQL integration)', () => {
       },
     });
 
-    await repository.createForSuccessfulLogin({
-      userId: storedUser.id,
-      tokenHash,
-      expiresAt,
-      authenticatedAt,
-    });
+    await expect(
+      repository.createForSuccessfulLogin({
+        userId: storedUser.id,
+        tokenHash,
+        expiresAt,
+        authenticatedAt,
+      }),
+    ).resolves.toBe(true);
 
     const updatedUser = await prisma.user.findUniqueOrThrow({
       where: { id: storedUser.id },
@@ -159,6 +213,53 @@ describe('Prisma repositories (PostgreSQL integration)', () => {
         new Date('2026-08-25T08:30:00.000Z'),
       ),
     ).resolves.toBeNull();
+  });
+
+  it('does not create a session when a concurrent disable commits first', async () => {
+    const { prisma } = getTestSchema();
+    const repository = new PrismaAuthSessionRepository(prisma);
+    const tokenHash = 'f'.repeat(64);
+    const disableUpdated = createDeferred();
+    const releaseDisable = createDeferred();
+    const storedUser = await prisma.user.create({
+      data: {
+        email: 'concurrently-disabled@example.com',
+        passwordHash: 'stored-password-hash',
+        status: 'ACTIVE',
+      },
+    });
+    const disableUser = prisma.$transaction(async (transaction) => {
+      await transaction.user.update({
+        where: { id: storedUser.id },
+        data: { status: 'DISABLED' },
+      });
+      disableUpdated.resolve();
+      await releaseDisable.promise;
+    });
+
+    await disableUpdated.promise;
+
+    const createSession = repository.createForSuccessfulLogin({
+      userId: storedUser.id,
+      tokenHash,
+      authenticatedAt: new Date('2026-08-25T08:00:00.000Z'),
+      expiresAt: new Date('2026-08-26T08:00:00.000Z'),
+    });
+
+    releaseDisable.resolve();
+    await disableUser;
+
+    await expect(createSession).resolves.toBe(false);
+    await expect(
+      prisma.user.findUniqueOrThrow({
+        where: { id: storedUser.id },
+        select: { lastLoginAt: true, status: true },
+      }),
+    ).resolves.toEqual({
+      lastLoginAt: null,
+      status: 'DISABLED',
+    });
+    await expect(prisma.authSession.count()).resolves.toBe(0);
   });
 
   it('does not resolve expired, revoked, or disabled-user sessions', async () => {
