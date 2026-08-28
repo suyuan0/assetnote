@@ -34,11 +34,21 @@ function isUsersEmailConstraint(value: unknown): boolean {
   );
 }
 
-function isSerializableTransactionConflict(error: unknown): boolean {
-  return (
+export function isSerializableTransactionConflict(error: unknown): boolean {
+  if (
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === 'P2034'
-  );
+  ) {
+    return true;
+  }
+
+  if (!isRecord(error) || error['name'] !== 'DriverAdapterError') {
+    return false;
+  }
+
+  const cause = error['cause'];
+
+  return isRecord(cause) && cause['kind'] === 'TransactionWriteConflict';
 }
 
 export function isUsersEmailUniqueConstraintConflict(error: unknown): boolean {

@@ -1,5 +1,8 @@
 import { Prisma } from '../../../generated/prisma/client';
-import { isUsersEmailUniqueConstraintConflict } from './prisma-initial-super-admin.repository';
+import {
+  isSerializableTransactionConflict,
+  isUsersEmailUniqueConstraintConflict,
+} from './prisma-initial-super-admin.repository';
 
 function createKnownRequestError(
   code: string,
@@ -46,6 +49,36 @@ describe('isUsersEmailUniqueConstraintConflict', () => {
       isUsersEmailUniqueConstraintConflict(
         createKnownRequestError('P2034', { target: ['email'] }),
       ),
+    ).toBe(false);
+  });
+});
+
+describe('isSerializableTransactionConflict', () => {
+  it('accepts a Prisma P2034 error', () => {
+    expect(
+      isSerializableTransactionConflict(createKnownRequestError('P2034', {})),
+    ).toBe(true);
+  });
+
+  it('accepts the Prisma PostgreSQL adapter transaction conflict', () => {
+    expect(
+      isSerializableTransactionConflict({
+        name: 'DriverAdapterError',
+        cause: {
+          kind: 'TransactionWriteConflict',
+        },
+      }),
+    ).toBe(true);
+  });
+
+  it('does not accept another driver adapter failure', () => {
+    expect(
+      isSerializableTransactionConflict({
+        name: 'DriverAdapterError',
+        cause: {
+          kind: 'UniqueConstraintViolation',
+        },
+      }),
     ).toBe(false);
   });
 });
