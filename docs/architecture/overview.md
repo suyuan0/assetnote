@@ -1,7 +1,7 @@
 # AssetNote Architecture
 
-- Status: baseline v1
-- Last updated: 2026-08-25
+- Status: baseline v2
+- Last updated: 2026-08-28
 
 ## Purpose
 
@@ -9,14 +9,15 @@ This document defines AssetNote's durable system boundaries. It is intentionally
 
 The baseline favors explicit ownership, one-way dependencies, and runtime-validated boundaries. It does not require empty abstraction layers or speculative shared packages.
 
-## System context
+## Current system context
 
-AssetNote currently contains two deployable applications:
+AssetNote currently contains three deployable applications:
 
 - `apps/web`: the Next.js user experience and web delivery layer.
 - `apps/api`: the NestJS backend and authority for business rules and persistent product data.
+- `apps/mobile`: the Expo and React Native application for iOS and Android.
 
-Shared packages provide reusable libraries and tooling to applications. They are not independently deployable runtimes or alternate application layers.
+Shared packages provide reusable libraries and tooling to applications. They are not independently deployable runtimes or alternate application layers. `packages/contracts` has not been introduced yet.
 
 ```text
 Browser
@@ -27,27 +28,58 @@ apps/web -----------------------> packages/ui
    | HTTP
    v
 apps/api
-
-apps/web -----\
-               >---------------> packages/contracts (when introduced)
-apps/api -----/
+   ^
+   | HTTP
+apps/mobile
+   ^
+   |
+Native device
 
 apps/* ------------------------> packages/*
 packages/* ---------X----------> apps/*
-apps/web ----------X-----------> apps/api source
-apps/api ----------X-----------> apps/web source
+apps/* ------------X-----------> another app's source
+```
+
+The HTTP arrows describe the only permitted runtime boundary between client applications and the API. They do not claim that either client already consumes an implemented API feature.
+
+## Accepted next boundary
+
+The next accepted but unimplemented capability is `market-data`: an API-owned feature whose first provider adapter is planned to use `stock-sdk`.
+
+`packages/contracts` remains conditional on the first real client/API transport contract. In the target diagram, `[planned]` marks a workspace, feature, dependency, or package that does not exist yet.
+
+```text
+apps/api
+  `-- src/modules/market-data [planned]
+        `-- stock-sdk adapter [planned]
+              `-- external market-data sources
+
+apps/web --------\
+apps/mobile ------>-------------- packages/contracts [when introduced]
+apps/api --------/
+
+apps/* ------------------------> packages/*
+packages/* ---------X----------> apps/*
+apps/* ------------X-----------> another app's source
 ```
 
 ## Workspace ownership
 
-| Workspace                    | Owns                                                                               | Must not own                                                                   |
+| Current workspace            | Owns                                                                               | Must not own                                                                   |
 | ---------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | `apps/web`                   | Routes, presentation, interaction, web orchestration, API/session adapters         | Persistence, API business invariants, authorization policy, API implementation |
-| `apps/api`                   | Use cases, business rules, authorization policy, persistence, backend integrations | Browser UI or web-framework concerns                                           |
-| `packages/ui`                | Reusable product-agnostic React primitives and styling foundations                 | Product workflows, API access, auth policy, domain assumptions                 |
+| `apps/api`                   | Use cases, business rules, authorization policy, persistence, backend integrations | Client UI or delivery-framework concerns                                       |
+| `apps/mobile`                | Native routes, presentation, interaction, device integration, API/session adapters | Persistence, API business invariants, Web UI, backend integrations             |
+| `packages/ui`                | Reusable Web React/DOM primitives, CSS, and browser styling foundations            | Native UI, product workflows, API access, auth policy, domain assumptions      |
 | `packages/eslint-config`     | Shared static-analysis policy                                                      | Application behavior                                                           |
 | `packages/typescript-config` | Shared compiler defaults                                                           | Application behavior                                                           |
-| `packages/contracts`         | Runtime transport schemas and inferred transport types, when created               | Domain entities, ORM models, framework decorators, UI behavior                 |
+
+The accepted target introduces these ownership boundaries only when their implementation is created:
+
+| Planned workspace or feature       | Owns                                                                            | Must not own                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `apps/api/src/modules/market-data` | Provider-neutral market-data use cases, policy, ports, and third-party adapters | Client rendering, vendor-shaped HTTP contracts, unrestricted upstream proxying     |
+| `packages/contracts`               | Runtime transport schemas and inferred transport types                          | Domain entities, ORM models, framework decorators, API clients, credential storage |
 
 ## Architecture invariants
 
@@ -58,6 +90,8 @@ apps/api ----------X-----------> apps/web source
 5. Every untrusted boundary is validated at runtime; TypeScript types do not replace validation.
 6. Transport models, domain models, persistence models, and view models may resemble one another but are not the same ownership boundary.
 7. Shared code is extracted for a stable boundary or real multi-consumer reuse, not anticipated reuse.
+8. Client applications obtain external market data through the API; provider networking and provider policy remain backend integrations.
+9. UI reuse must respect the runtime platform. A Web component package is not a React Native package merely because both use React.
 
 ## Web baseline
 
@@ -67,10 +101,24 @@ The web application follows the Next.js App Router model.
 - Server Components are the default. Client Components are narrow interactive leaves.
 - Product behavior may be grouped under `features/<feature>` when a feature becomes larger than route-local code.
 - `lib/` contains technical boundaries such as a centralized API client, auth integration, and validated configuration.
-- Generic UI primitives live in `@workspace/ui`; product-specific components remain in the web application.
+- Generic Web UI primitives live in `@workspace/ui`; product-specific components remain in the Web application.
 - The web layer may orchestrate a user interaction, but it does not duplicate API-owned business decisions or access product persistence directly.
 
 Backend calls pass through a centralized client boundary. That boundary owns base URL configuration, request policy, runtime response validation, and normalized errors. Components must not each invent those concerns.
+
+## Mobile baseline
+
+ADR 0003 is implemented by the `apps/mobile` workspace. The current implementation is an unauthenticated Expo Router shell; it does not yet consume an API feature or create a shared transport contract.
+
+- The workspace uses Expo SDK 57, React Native, TypeScript, and Expo Router for an iOS and Android application.
+- `src/app` contains route and layout files only. Product behavior belongs under `src/features`; application-local Native components belong under `src/components`; API, authentication, and configuration adapters belong under `src/lib` when those responsibilities appear.
+- When an API feature is integrated, Mobile communicates through a centralized HTTP client boundary and does not import another application's source or access persistence and third-party market providers directly.
+- `@workspace/ui` remains Web-only. Native components stay inside Mobile until demonstrated Native reuse creates a stable package boundary.
+- An empty scaffold does not justify `packages/contracts`. The first real client/API transport boundary does.
+- Expo SDK compatibility controls React Native and related dependency versions. The SDK-selected React version may differ from Web. Expo's automatic pnpm monorepo support is the default; custom Metro resolution and custom native builds are added only after a concrete requirement.
+- Public Mobile configuration may contain an API base URL but never secrets or privileged provider configuration.
+
+See [ADR 0003: Expo mobile application boundary](./decisions/0003-expo-mobile-application-boundary.md).
 
 ## API baseline
 
@@ -99,6 +147,8 @@ domain -> no NestJS, HTTP, ORM, or infrastructure dependency
 
 Controllers remain thin, application providers coordinate use cases, domain code expresses business rules, and infrastructure implements outward-facing details. Feature-to-feature calls use an exported provider or explicit facade rather than deep imports.
 
+Third-party integrations remain behind application- or domain-owned ports. Their concrete SDKs, response types, errors, and configuration do not cross into controllers, transport contracts, or domain models.
+
 ## Authentication baseline
 
 The API now implements browser-oriented email/password authentication, but the Web application has not integrated that HTTP surface yet. The API owns identity, password verification, platform authorization, and server-side sessions; after Web integration, the Web application will only carry the session credential and present the authenticated experience.
@@ -114,17 +164,34 @@ The first account is created through the controlled [initial super administrator
 
 See [ADR 0002: Email/password authentication and server-side sessions](./decisions/0002-email-password-authentication-and-server-sessions.md) for the security, role, and session decisions.
 
+The accepted Mobile boundary does not change this browser credential model. Protected Mobile features remain blocked until a separate credential-transport decision defines creation, transport, device storage, expiration, revocation, and logout semantics. Agents must not relax the Web origin, cookie, CORS, or CSRF controls to make Mobile authentication work.
+
 ## Shared contracts
 
-`packages/contracts` is deliberately deferred until the first real Web/API feature needs a shared contract. When introduced, it will:
+`packages/contracts` does not currently exist. It is deliberately deferred until the first real client/API feature needs a shared contract. When introduced, it will:
 
 - contain framework-independent runtime schemas and types derived from them;
 - describe transport payloads, not internal domain or persistence structures;
-- be consumed through declared package exports by both applications;
-- avoid imports from NestJS, Next.js, React, database libraries, or application source;
-- require compatible API implementation and web consumption changes in the same pull request.
+- be consumed through declared package exports by the API and each applicable client;
+- avoid imports from NestJS, Next.js, Expo, React, database libraries, provider SDKs, or application source;
+- keep API clients, credential transport, navigation, and view models in their owning applications;
+- require compatible API implementation and client consumption changes in the same pull request.
 
 The schema library and versioning policy will be recorded when the package is introduced, based on actual requirements.
+
+## Accepted market-data target
+
+ADR 0004 accepts an API-owned market-data integration, but neither the feature nor `stock-sdk` is present in the current baseline.
+
+- The capability will live under `apps/api/src/modules/market-data`.
+- Application code will own a provider-neutral port and AssetNote models; a `stock-sdk` infrastructure adapter will implement the port.
+- Only the infrastructure adapter may import the SDK networking surface. Controllers and use cases expose narrow product operations and never proxy arbitrary provider methods or URLs.
+- Provider responses and errors will be mapped before crossing the application port or HTTP boundary. Source and freshness semantics remain explicit.
+- The initial boundary will require runtime input validation, bounded batches and date ranges, explicit timeouts, error normalization, and safe observability. Any later retry, rate-limit, circuit-breaker, cache, request-coalescing, or fallback policy remains API-owned and is added only when a concrete reliability or scale requirement justifies it.
+- External market data will not be persisted in PostgreSQL by default. Durable snapshots, historical ingestion, alerts, and auditing require explicit retention, provenance, licensing, and query decisions.
+- Deterministic verification will use fakes, fixtures, or an injected network implementation. Real upstream smoke tests remain explicit and opt-in.
+
+See [ADR 0004: Stock market data provider boundary](./decisions/0004-stock-market-data-provider-boundary.md).
 
 ## Persistence baseline
 
@@ -148,15 +215,17 @@ Declarative guardrails are converted into executable controls incrementally.
 
 The Web application and UI package self-references now resolve `@workspace/ui` through package exports. The UI stylesheet explicitly scans only UI-owned source; Tailwind's Web build context scans application source. `apps/web/components.json` deliberately points to the UI stylesheet as shadcn monorepo generator metadata, not as a runtime import or permission to consume other package internals.
 
-Workspace dependency enforcement is now executable. `pnpm boundaries:check` first validates that every non-root pnpm workspace is directly under `apps/` or `packages/`, has a local `turbo.json` with `"extends": ["//"]`, and carries exactly the tag required by its layer. It then runs Turbo Boundaries: `layer-app` workspace dependencies may target only `layer-package`, while `layer-package` workspace dependencies may not target `layer-app`. `pnpm verify` includes this check. CI enforcement is intentionally deferred by the current project decision.
+Workspace dependency enforcement is now executable. `pnpm boundaries:check` first validates that every non-root pnpm workspace is directly under `apps/` or `packages/`, has a local `turbo.json` with `"extends": ["//"]`, and carries exactly the tag required by its layer. Application workspaces must also be private and expose non-empty `lint`, `typecheck`, and `build` scripts so the root verification graph cannot silently skip them. Application-specific dependency checks reject Web UI from API/Mobile and reject `stock-sdk` from client manifests. It then runs Turbo Boundaries: `layer-app` workspace dependencies may target only `layer-package`, while `layer-package` workspace dependencies may not target `layer-app`. `pnpm verify` includes this check. CI enforcement is intentionally deferred by the current project decision.
 
-| Concern                     | Declarative control now                   | Executable control / status                                                                                                                                                             |
-| --------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Workspace dependency flow   | Architecture plus layered `AGENTS.md`     | Implemented: `pnpm boundaries:check` validates workspace layout/tags, allows `layer-app` dependencies only on `layer-package`, and prevents `layer-package` dependencies on `layer-app` |
-| Framework-local conventions | Workspace `AGENTS.md`                     | Implemented: `pnpm verify` runs all available lint, typecheck, tests, and builds                                                                                                        |
-| Formatting                  | Agent workflow                            | Implemented: `pnpm format:check`                                                                                                                                                        |
-| API behavior                | API instructions and existing Jest suites | Implemented: root unit and uncached e2e tests through `pnpm verify`                                                                                                                     |
-| Merge quality               | Local verification guidance               | Local gate implemented through `pnpm verify`; CI enforcement intentionally deferred                                                                                                     |
+| Concern                     | Declarative control now                     | Executable control / status                                                                                                                                                             |
+| --------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workspace dependency flow   | Architecture plus layered `AGENTS.md`       | Implemented: `pnpm boundaries:check` validates workspace layout/tags, allows `layer-app` dependencies only on `layer-package`, and prevents `layer-package` dependencies on `layer-app` |
+| Framework-local conventions | Workspace `AGENTS.md`                       | Implemented: `pnpm verify` runs all available lint, typecheck, tests, and builds                                                                                                        |
+| Formatting                  | Agent workflow                              | Implemented: `pnpm format:check`                                                                                                                                                        |
+| API behavior                | API instructions and existing Jest suites   | Implemented: root unit and uncached e2e tests through `pnpm verify`                                                                                                                     |
+| Client platform isolation   | Overview, ADR 0003, and layered `AGENTS.md` | Implemented: workspace checks reject forbidden client dependencies; Mobile lint blocks cross-app, Web UI, and provider imports; root gates run lint, typecheck, and native export       |
+| Market-provider isolation   | Overview, ADR 0004, and API `AGENTS.md`     | Declarative until the SDK is introduced; integration work must restrict SDK imports to the owning infrastructure adapter                                                                |
+| Merge quality               | Local verification guidance                 | Local gate implemented through `pnpm verify`; CI enforcement intentionally deferred                                                                                                     |
 
 An architecture rule is not considered fully enforced merely because it is documented. Until its executable control is added, agents must report manual compliance explicitly.
 

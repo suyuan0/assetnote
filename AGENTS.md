@@ -11,18 +11,23 @@
 
 - `apps/web`: Next.js user interface and web delivery layer.
 - `apps/api`: NestJS API, product use cases, business rules, and persistence boundary.
-- `packages/ui`: reusable, product-agnostic React UI primitives.
+- `apps/mobile`: Expo and React Native application for iOS and Android.
+- `packages/ui`: reusable, product-agnostic Web React/DOM UI primitives.
 - `packages/eslint-config`: shared lint configuration.
 - `packages/typescript-config`: shared TypeScript configuration.
 - `docs/architecture`: durable architecture decisions and system documentation.
 
+Conditional future boundaries are documented before implementation: `packages/contracts` will be created with the first real client/API transport contract, and the API will own the planned `market-data` integration. Do not create empty workspaces merely because their boundary has been reserved.
+
 ## Non-negotiable boundaries
 
 - Applications may depend on packages; packages must never depend on applications.
-- `apps/web` and `apps/api` must never import each other or reach into another workspace's `src` directory.
-- Web/API communication crosses an explicit HTTP boundary. Shared transport schemas and types belong in `packages/contracts` when that package is introduced, never in either application for the other application to import.
+- An application must never import another application or reach into another workspace's `src` directory.
+- Client/API communication crosses an explicit HTTP boundary. Shared transport schemas and types belong in `packages/contracts` when that package is introduced, never in one application for another application to import.
 - Consume other workspaces through their public entrypoints. Runtime/library packages use declared package exports; tooling packages use their documented configuration entrypoints.
-- `apps/api` owns product business invariants and persistent data access. `apps/web` owns presentation, interaction, and web-specific orchestration.
+- `apps/api` owns product business invariants and persistent data access. `apps/web` and `apps/mobile` own presentation, interaction, and platform-specific orchestration for their delivery environments.
+- `@workspace/ui` is Web-only. `apps/mobile` must not depend on it or treat DOM components and CSS as a cross-platform UI boundary.
+- Stock-market provider networking is an API-owned backend integration. Client applications must not depend on `stock-sdk` or call upstream market-data providers directly. Within the API, vendor SDK imports remain inside the owning feature's infrastructure adapter and vendor types never become transport contracts.
 - Keep product-specific code in its owning application. Create a shared package only for a stable boundary or demonstrated multi-workspace reuse.
 - Do not expose persistence entities, framework objects, or internal module types as public API contracts.
 - Every child workspace must live directly under `apps/` or `packages/` and define a local `turbo.json` with `"extends": ["//"]`. Application workspaces use exactly `"tags": ["layer-app"]`; package workspaces use exactly `"tags": ["layer-package"]`.
@@ -51,6 +56,7 @@
 - Use method syntax for class behavior. Use arrow-function class fields only when lexical `this` binding is required.
 - Do not rewrite otherwise untouched code solely to change between function declarations and arrow functions.
 - Do not make checks pass with broad lint disables, unchecked type assertions, or `any`. A narrow exception must include a local explanation.
+- Do not bypass an architecture rule with Turbo boundary ignore directives, restricted-import lint disables, package-resolution aliases, or undeclared dependencies. An intentional exception requires the same architecture review and documentation as changing the rule itself.
 - Do not commit, push, rewrite history, or discard user changes unless the user explicitly requests it.
 
 ## Project Skill governance
@@ -68,6 +74,7 @@
 
 - Documentation-only: run `pnpm exec prettier --check <changed-docs...>` and `git diff --check`.
 - Web-only: run the available `web` lint, typecheck, test, and build checks that cover the change.
+- Mobile-only: run its lint, typecheck, relevant tests, build/export check, and Expo diagnostics required by its local instructions.
 - API-only: run `pnpm --filter api lint`, `pnpm --filter api typecheck`, relevant tests, and `pnpm --filter api build`.
 - Shared packages or cross-workspace changes: run affected package checks followed by the relevant root `lint:check`, `typecheck`, `test`, and `build` tasks.
 - If a required check cannot run, state the exact command and reason in the handoff.

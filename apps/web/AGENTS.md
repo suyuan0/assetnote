@@ -20,6 +20,7 @@ These rules apply to `apps/web` in addition to the repository instructions.
 
 - Never import from `apps/api`, API source paths, persistence code, or server-only internals.
 - Access the backend through a centralized API client boundary; do not scatter base URLs, endpoint strings, or ad hoc response parsing through components.
+- Obtain market data through the AssetNote API. Do not depend on `stock-sdk`, call provider endpoints directly, or expose vendor response types to components.
 - When `@workspace/contracts` exists, use its public runtime schemas/types at the HTTP boundary and map them to UI-specific view models where needed.
 - Do not access the database or reimplement API-owned business rules in Next.js route handlers, Server Actions, or components.
 - Browser code may read only explicitly public environment variables. Keep secrets and privileged API calls server-side.
@@ -28,6 +29,7 @@ These rules apply to `apps/web` in addition to the repository instructions.
 
 - Preserve semantic HTML, keyboard operation, focus behavior, labels, and useful loading/empty/error states.
 - Keep product-specific styling and composition in the application; extend `@workspace/ui` only when the primitive is genuinely reusable.
+- Treat `@workspace/ui` as a Web component package. Do not add React Native compatibility shims or weaken its DOM and accessibility semantics for the Mobile client.
 - Avoid unnecessary client state and effects when the same result can be derived during rendering or on the server.
 
 ## Verification

@@ -36,8 +36,18 @@ AppModule -------------> feature modules and app-wide infrastructure
 ## Configuration and dependencies
 
 - Centralize and validate new environment configuration. Do not add scattered `process.env` access.
-- Never import from `apps/web` or `@workspace/ui`.
+- Never import from another application or `@workspace/ui`.
 - Add backend/domain SDKs to `apps/api`. Browser or web-delivery SDKs belong in `apps/web`; neither placement moves authorization policy out of the API.
+
+## External market data
+
+- Stock-market provider networking belongs to the owning feature's infrastructure layer behind an application- or domain-owned port. Controllers, application providers, and domain code must not import `stock-sdk` or another concrete provider SDK directly.
+- Convert vendor responses and errors to AssetNote-owned models and failures inside the adapter. Vendor types, raw payloads, provider URLs, and SDK errors must not cross the port or become HTTP contracts.
+- Expose narrow use cases with runtime-validated symbols, markets, date ranges, and batch limits. Never expose an arbitrary upstream URL relay or generic SDK method proxy.
+- Require bounded inputs, explicit timeouts, normalized errors, and safe provider observability. Retry, rate-limit, circuit-breaker, cache, request-coalescing, and fallback policy remain API-owned but are added only when a concrete reliability or scale requirement justifies them; do not treat SDK defaults as product policy.
+- Do not persist external market data by default. Durable snapshots, historical ingestion, alerts, or audits require explicit provenance, retention, licensing, and query requirements.
+- Keep deterministic tests independent of live providers through fakes, controlled fixtures, or an injected network implementation. Real-network smoke checks are opt-in and remain outside `pnpm verify`.
+- When the first provider is integrated, add an executable restricted-import rule in the same change so only its owning infrastructure adapter may import the SDK.
 
 ## Verification
 

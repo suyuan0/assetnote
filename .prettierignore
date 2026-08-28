@@ -1,8 +1,10 @@
 dist/
 node_modules/
 .next/
+.expo/
 .turbo/
 coverage/
 pnpm-lock.yaml
 .pnpm-store/
+expo-env.d.ts
 apps/api/src/generated/prisma/

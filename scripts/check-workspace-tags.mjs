@@ -44,6 +44,18 @@ if (!Array.isArray(projects)) {
 const errors = []
 const seenPaths = new Set()
 const workspaces = []
+const requiredApplicationScripts = ["build", "lint", "typecheck"]
+const dependencyFields = [
+  "dependencies",
+  "devDependencies",
+  "optionalDependencies",
+  "peerDependencies",
+]
+const forbiddenDependenciesByApplication = new Map([
+  ["apps/api", ["@workspace/ui"]],
+  ["apps/mobile", ["@workspace/ui", "stock-sdk"]],
+  ["apps/web", ["stock-sdk"]],
+])
 
 for (const project of projects) {
   if (!project || typeof project.path !== "string") {
@@ -100,9 +112,60 @@ for (const workspace of workspaces) {
   }
 
   const expectedTag = parts[0] === "apps" ? "layer-app" : "layer-package"
+  const packagePath = path.join(workspace.absolutePath, "package.json")
   const turboPath = path.join(workspace.absolutePath, "turbo.json")
 
+  let manifest
   let config
+
+  try {
+    manifest = JSON.parse(readFileSync(packagePath, "utf-8"))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    errors.push(`${workspace.portablePath}: invalid package.json (${message}).`)
+  }
+
+  if (manifest !== undefined) {
+    if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) {
+      errors.push(
+        `${workspace.portablePath}: package.json must contain an object.`
+      )
+    } else if (parts[0] === "apps") {
+      if (manifest.private !== true) {
+        errors.push(`${workspace.portablePath}: applications must be private.`)
+      }
+
+      for (const scriptName of requiredApplicationScripts) {
+        const script = manifest.scripts?.[scriptName]
+
+        if (typeof script !== "string" || script.trim().length === 0) {
+          errors.push(
+            `${workspace.portablePath}: missing non-empty "${scriptName}" script.`
+          )
+        }
+      }
+
+      const forbiddenDependencies =
+        forbiddenDependenciesByApplication.get(workspace.portablePath) ?? []
+
+      for (const dependencyName of forbiddenDependencies) {
+        for (const field of dependencyFields) {
+          const dependencies = manifest[field]
+
+          if (
+            dependencies &&
+            typeof dependencies === "object" &&
+            !Array.isArray(dependencies) &&
+            Object.hasOwn(dependencies, dependencyName)
+          ) {
+            errors.push(
+              `${workspace.portablePath}: ${field} must not declare "${dependencyName}".`
+            )
+          }
+        }
+      }
+    }
+  }
 
   try {
     config = JSON.parse(readFileSync(turboPath, "utf-8"))
